@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Roth’s Theorem Challenge — Avoid 3‑Term APs!</title>
+  <style>
+    :root{
+      --bg: #0f172a;          /* slate-900 */
+      --panel: #111827;       /* gray-900 */
+      --panel-2: #0b1220;     /* darker */
+      --fg: #e5e7eb;          /* gray-200 */
+      --muted:#9ca3af;        /* gray-400 */
+      --accent:#22d3ee;       /* cyan-400 */
+      --accent-2:#a78bfa;     /* violet-400 */
+      --red:#ef4444;          /* red-500 */
+      --blue:#3b82f6;         /* blue-500 */
+      --good:#10b981;         /* emerald */
+      --warn:#f59e0b;         /* amber */
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--fg);
+      background: radial-gradient(1200px 600px at 10% -10%, #1f2937 0%, rgba(31,41,55,0) 60%),
+                  radial-gradient(800px 500px at 90% 0%, #111827 0%, rgba(17,24,39,0) 70%),
+                  linear-gradient(180deg, #020617, #0b1220 70%);
+    }
+    .container{max-width:1000px; margin:24px auto; padding:16px;}
+    header{
+      display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:18px; padding:16px 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .logo{display:flex; align-items:center; gap:10px}
+    .logo .dot{width:12px; height:12px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 0 12px var(--accent-2)}
+    h1{font-size: clamp(18px, 2.3vw, 26px); margin:0; letter-spacing:.3px}
+    .sub{font-size:13px; color:var(--muted)}
+
+    .controls{
+      margin-top:14px; display:flex; flex-wrap:wrap; gap:12px; align-items:center;
+      background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+      border-radius:16px; padding:12px;
+    }
+    .controls .group{display:flex; align-items:center; gap:8px; background: rgba(0,0,0,.18); padding:8px 10px; border-radius:12px; border:1px solid rgba(255,255,255,.06)}
+    select, input[type=number], input[type=range]{
+      background:#0b1220; color:var(--fg); border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:6px 10px;
+      accent-color: var(--accent);
+    }
+    button{
+      background: linear-gradient(135deg, rgba(34,211,238,.12), rgba(167,139,250,.12));
+      color: var(--fg); border:1px solid rgba(255,255,255,.14);
+      padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:600; letter-spacing:.2px;
+      transition:.2s transform ease, .2s filter ease, .2s background ease;
+    }
+    button:hover{filter:brightness(1.1)}
+    button:active{transform: translateY(1px)}
+    button.ghost{background: rgba(255,255,255,.04)}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.06); font-size:12px}
+
+    #status{margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+    #status .badge{padding:6px 10px; border-radius:10px; background: rgba(255,255,255,.06); font-size:13px; border:1px solid rgba(255,255,255,.08)}
+    #status .turn.red{background: rgba(239,68,68,.2); border-color:rgba(239,68,68,.4)}
+    #status .turn.blue{background: rgba(59,130,246,.2); border-color:rgba(59,130,246,.4)}
+
+    .board{
+      margin-top:16px; background: rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:14px;
+    }
+    .grid{display:grid; grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap:8px}
+    .cell{
+      user-select:none; -webkit-user-select:none; text-align:center; font-weight:700; letter-spacing:.2px;
+      padding:14px 0; border-radius:12px; border:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      cursor:pointer; transition:.18s transform ease, .18s filter ease, .18s background ease;
+    }
+    .cell:hover{filter:brightness(1.1)}
+    .cell.picked{background: linear-gradient(180deg, rgba(16,185,129,.18), rgba(16,185,129,.08)); border-color: rgba(16,185,129,.45)}
+    .cell.red{background: linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.08)); border-color: rgba(239,68,68,.45)}
+    .cell.blue{background: linear-gradient(180deg, rgba(59,130,246,.22), rgba(59,130,246,.08)); border-color: rgba(59,130,246,.45)}
+    .cell.blocked{opacity:.45; filter:saturate(.4)}
+    .cell.bad{animation: pulse .8s ease-in-out 0s 3}
+    @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(239,68,68,.0)} 50%{box-shadow:0 0 18px 2px rgba(239,68,68,.35)} 100%{box-shadow:0 0 0 0 rgba(239,68,68,.0)} }
+
+    details.info{margin-top:16px; background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:10px 12px}
+    details.info summary{cursor:pointer; list-style:none}
+    details.info summary::-webkit-details-marker{display:none}
+    .muted{color:var(--muted)}
+
+    .banner{margin-top:12px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.1); display:none}
+    .banner.show{display:block}
+    .banner.win{background: rgba(16,185,129,.18); border-color: rgba(16,185,129,.4)}
+    .banner.lose{background: rgba(239,68,68,.18); border-color: rgba(239,68,68,.4)}
+    .flex{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+
+    .footer{margin:22px auto 8px; text-align:center; color:var(--muted); font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo"><span class="dot"></span>
+        <div>
+          <h1>Roth’s Theorem Challenge</h1>
+          <div class="sub">Pick numbers from 1…N but <strong>avoid any 3‑term arithmetic progression</strong>. Or play a 2‑color duel!</div>
+        </div>
+      </div>
+      <span class="pill" title="Fun fact">W(2,3)=9 ➜ any 2‑coloring of 1…9 has a 3‑AP</span>
+    </header>
+
+    <div class="controls">
+      <div class="group">
+        <label for="mode">Mode</label>
+        <select id="mode">
+          <option value="solo">Solo — Avoid 3‑APs</option>
+          <option value="versus">Two‑Player — Red vs Blue</option>
+        </select>
+      </div>
+      <div class="group" id="nGroup">
+        <label for="n">N</label>
+        <input id="n" type="range" min="9" max="60" value="30" />
+        <input id="nNum" type="number" min="9" max="60" value="30" style="width:70px" />
+      </div>
+      <div class="group">
+        <button id="newBtn">New game</button>
+        <button id="undoBtn" class="ghost">Undo</button>
+        <button id="hintBtn" class="ghost">Hint</button>
+      </div>
+      <div class="group">
+        <span class="muted" id="safeLabel">Safe picks: <strong id="safeCount">—</strong></span>
+        <span class="muted">Selected: <strong id="selCount">0</strong></span>
+      </div>
+    </div>
+
+    <div id="status" class="flex"></div>
+    <div class="banner" id="banner"></div>
+
+    <div class="board">
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </div>
+
+    <details class="info">
+      <summary>What’s the math here?</summary>
+      <div style="margin-top:8px; line-height:1.55">
+        <p><strong>Roth’s Theorem</strong> (1953): any subset of the integers 1…N of sufficiently large density contains a 3‑term arithmetic progression (3‑AP). In this game you try to pick as many numbers as possible <em>without</em> creating a 3‑AP.</p>
+        <p><strong>Two‑player mode</strong> is a friendly nod to <em>van der Waerden’s theorem</em>. A famous fact is W(2,3)=9, meaning any red/blue coloring of 1…9 forces a monochromatic 3‑AP—so someone must lose by then!</p>
+        <p class="muted">Tip: A 3‑AP is a triple (a, b, c) with equal gaps, like (4, 7, 10) or (3, 5, 7).</p>
+      </div>
+    </details>
+
+    <div class="footer">Built for math‑carnival fun — no internet required. Save as a single HTML file and open in any browser.</div>
+  </div>
+
+  <script>
+    const el = (sel) => document.querySelector(sel);
+    const grid = el('#grid');
+    const modeSel = el('#mode');
+    const nRange = el('#n');
+    const nNum = el('#nNum');
+    const newBtn = el('#newBtn');
+    const undoBtn = el('#undoBtn');
+    const hintBtn = el('#hintBtn');
+    const selCount = el('#selCount');
+    const safeCount = el('#safeCount');
+    const status = el('#status');
+    const banner = el('#banner');
+
+    const state = {
+      mode: 'solo',
+      N: 30,
+      triplets: [],            // all 3-AP triples
+      byNum: [],               // map i -> list of triples containing i
+      selected: new Set(),     // solo mode
+      colors: [],              // versus mode: '','R','B'
+      turn: 'R',               // whose turn in versus
+      history: []              // stack of snapshots
+    };
+
+    function buildTriplets(N){
+      const triples=[]; const byNum = Array.from({length:N+1}, ()=>[]);
+      for(let a=1;a<=N;a++){
+        for(let b=a+1;b<=N;b++){
+          const c = 2*b - a;
+          if(c<=N){ const t=[a,b,c]; triples.push(t); byNum[a].push(t); byNum[b].push(t); byNum[c].push(t); }
+        }
+      }
+      return {triples, byNum};
+    }
+
+    function snapshot(){
+      state.history.push({
+        mode: state.mode,
+        N: state.N,
+        selected: new Set(state.selected),
+        colors: state.colors.slice(),
+        turn: state.turn
+      });
+    }
+
+    function restore(snap){
+      state.mode = snap.mode;
+      state.N = snap.N;
+      state.selected = new Set(snap.selected);
+      state.colors = snap.colors.slice();
+      state.turn = snap.turn;
+      const res = buildTriplets(state.N);
+      state.triplets = res.triples; state.byNum = res.byNum;
+      nRange.value = String(state.N); nNum.value = String(state.N);
+      renderAll();
+    }
+
+    function reset(mode = state.mode){
+      state.mode = mode;
+      state.N = (+nRange.value)||30; nNum.value = String(state.N);
+      const res = buildTriplets(state.N);
+      state.triplets = res.triples; state.byNum = res.byNum;
+      state.selected.clear();
+      state.colors = Array(state.N+1).fill('');
+      state.turn = 'R';
+      state.history = [];
+      banner.className = 'banner'; banner.textContent = '';
+      renderAll();
+    }
+
+    function renderAll(){
+      // status
+      status.innerHTML = '';
+      const badges = [];
+      if(state.mode==='solo'){
+        badges.push(`<span class="badge">Mode: Solo</span>`);
+        badges.push(`<span class="badge">N = ${state.N}</span>`);
+        badges.push(`<span class="badge">Density: ${(state.selected.size/state.N).toFixed(2)}</span>`);
+      } else {
+        badges.push(`<span class="badge">Mode: Two‑Player</span>`);
+        badges.push(`<span class="badge turn ${state.turn==='R'?'red':'blue'}">Turn: ${state.turn==='R'?'Red':'Blue'}</span>`);
+        badges.push(`<span class="badge">N = ${state.N}</span>`);
+      }
+      status.insertAdjacentHTML('beforeend', badges.join(''));
+
+      // counts
+      selCount.textContent = state.mode==='solo' ? state.selected.size : (state.colors.filter(c=>c==='R'||c==='B').length);
+      safeCount.textContent = state.mode==='solo' ? safeMovesSolo().length : '—';
+
+      // grid
+      grid.innerHTML = '';
+      for(let i=1; i<=state.N; i++){
+        const d = document.createElement('button');
+        d.className = 'cell';
+        d.setAttribute('aria-label', `number ${i}`);
+        d.dataset.num = i;
+        d.textContent = i;
+        if(state.mode==='solo'){
+          if(state.selected.has(i)) d.classList.add('picked');
+          const blocked = wouldCreateAPSolo(i);
+          if(!state.selected.has(i) && blocked) d.classList.add('blocked');
+        } else {
+          const c = state.colors[i];
+          if(c==='R') d.classList.add('red');
+          if(c==='B') d.classList.add('blue');
+        }
+        d.addEventListener('click', onCellClick);
+        grid.appendChild(d);
+      }
+
+      // controls visibility
+      hintBtn.style.display = state.mode==='solo' ? 'inline-flex' : 'none';
+    }
+
+    function onCellClick(e){
+      const i = +e.currentTarget.dataset.num;
+      if(state.mode==='solo'){
+        if(state.selected.has(i)) { // allow unpick
+          snapshot();
+          state.selected.delete(i); renderAll(); return;
+        }
+        if(wouldCreateAPSolo(i)){
+          flashBadTriplets(i);
+          showBanner(`Picking ${i} would create a 3‑term progression. Try another number!`, 'lose');
+          return;
+        }
+        snapshot();
+        state.selected.add(i);
+        showBanner('', '');
+        renderAll();
+      } else {
+        if(state.colors[i]) return; // occupied
+        snapshot();
+        const me = state.turn; // 'R' or 'B'
+        state.colors[i] = me;
+        const loseTrip = wouldCreateAPColor(i, me);
+        if(loseTrip){
+          highlightTriplet(loseTrip);
+          showBanner(`${me==='R'?'Red':'Blue'} formed a 3‑AP at ${loseTrip.join(' – ')}. ${me==='R'?'Blue':'Red'} wins!`, 'lose');
+          // lock board: mark all cells as disabled by removing listeners
+          Array.from(document.querySelectorAll('.cell')).forEach(c=>c.disabled=true);
+        } else {
+          state.turn = me==='R'?'B':'R';
+          renderAll();
+        }
+      }
+    }
+
+    function showBanner(text, kind){
+      banner.textContent = text;
+      banner.className = 'banner' + (kind?(' show '+kind):'');
+      if(!text) banner.classList.remove('show');
+    }
+
+    function safeMovesSolo(){
+      const safes=[];
+      for(let i=1;i<=state.N;i++){
+        if(!state.selected.has(i) && !wouldCreateAPSolo(i)) safes.push(i);
+      }
+      return safes;
+    }
+
+    function wouldCreateAPSolo(i){
+      if(state.selected.has(i)) return false;
+      for(const t of state.byNum[i]){
+        // t contains i; if the other two are already in selected, then picking i closes a 3‑AP
+        let cnt=0;
+        for(const x of t){ if(x!==i && state.selected.has(x)) cnt++; }
+        if(cnt===2) return true;
+      }
+      return false;
+    }
+
+    function wouldCreateAPColor(i, color){
+      // returns the triplet that becomes monochromatic, or null
+      for(const t of state.byNum[i]){
+        let cnt=0;
+        for(const x of t){ if(x===i || state.colors[x]===color) cnt++; }
+        if(cnt===3) return t;
+      }
+      return null;
+    }
+
+    function flashBadTriplets(i){
+      // add a temporary class to the two existing numbers that would complete a 3‑AP with i
+      const pairs = [];
+      for(const t of state.byNum[i]){
+        const others = t.filter(x=>x!==i);
+        if(state.selected.has(others[0]) && state.selected.has(others[1])) pairs.push(others);
+      }
+      const set = new Set(pairs.flat());
+      for(const x of set){
+        const c = document.querySelector(`.cell[data-num="${x}"]`);
+        if(c){ c.classList.add('bad'); setTimeout(()=>c.classList.remove('bad'), 900); }
+      }
+    }
+
+    function highlightTriplet(trip){
+      for(const x of trip){
+        const c = document.querySelector(`.cell[data-num="${x}"]`);
+        if(c){ c.classList.add('bad'); setTimeout(()=>c.classList.remove('bad'), 1200); }
+      }
+    }
+
+    // controls
+    modeSel.addEventListener('change', ()=>{
+      // in versus mode, default to N=9 to emphasize W(2,3)=9
+      if(modeSel.value==='versus' && state.mode!=='versus'){
+        nRange.value = '9'; nNum.value = '9';
+      }
+      reset(modeSel.value);
+    });
+    nRange.addEventListener('input', ()=>{ nNum.value = nRange.value; reset(state.mode); });
+    nNum.addEventListener('input', ()=>{
+      let v = Math.max(9, Math.min(60, +nNum.value||30));
+      nNum.value = v; nRange.value = v; reset(state.mode);
+    });
+
+    newBtn.addEventListener('click', ()=> reset(state.mode));
+    undoBtn.addEventListener('click', ()=>{
+      const snap = state.history.pop();
+      if(snap) restore(snap);
+    });
+    hintBtn.addEventListener('click', ()=>{
+      if(state.mode!=='solo') return;
+      const safes = safeMovesSolo();
+      if(safes.length===0){ showBanner('No safe moves left — any choice makes a 3‑AP!', 'warn'); return; }
+      // highlight one safe move visually
+      const i = safes[Math.floor(Math.random()*safes.length)];
+      const c = document.querySelector(`.cell[data-num="${i}"]`);
+      if(c){ c.scrollIntoView({block:'center', inline:'center', behavior:'smooth'}); c.classList.add('picked'); setTimeout(()=>{ if(!state.selected.has(i)) c.classList.remove('picked'); }, 600); }
+      showBanner(`Try ${i}: it keeps you safe (for now).`, 'win');
+    });
+
+    // boot
+    reset('solo');
+  </script>
+</body>
+</html>
